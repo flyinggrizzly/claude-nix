@@ -10,7 +10,8 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/share/doc/claude-nix
-    cp ${../readme.md} $out/share/doc/claude-nix/readme.md
+    cp -f $src/readme.md $out/share/doc/claude-nix/readme.md
+    cp -f $src/LICENSE $out/share/doc/claude-nix/LICENSE || true
   '';
 
   meta = with lib; {
