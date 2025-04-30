@@ -4,15 +4,13 @@ A Nix flake that provides modules for configuring Claude Code in both home-manag
 
 ## Features
 
-- Installs the Claude Code CLI package (optionally)
-- Copies command files to `~/.claude/commands/` directory individually or from a directory
-- Manages Claude memory file at `~/.claude/CLAUDE.md`
-- Configures MCP servers in `~/.claude.json` 
-- Supports cleaning existing files before applying new configuration
-- Ensures files are actual copies, not symlinks
-- Works with both standalone home-manager and NixOS with home-manager
+- Install the Claude Code CLI package (optional)
+- Configure command files in `~/.claude/commands/`
+- Manage Claude memory in `~/.claude/CLAUDE.md`
+- Configure MCP servers in `~/.claude.json`
+- Support standalone home-manager and NixOS
 
-## Usage
+## Quick Start
 
 Add this flake to your inputs:
 
@@ -20,64 +18,56 @@ Add this flake to your inputs:
 {
   inputs = {
     # ...
-    claude-code.url = "github:yourusername/claude-code"; # Update with actual repository
+    claude-nix.url = "github:flyinggrizzly/claude-nix";
   };
 }
 ```
 
-### Home Manager Usage
+## Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enable` | boolean | `false` | Enable Claude Code configuration |
+| `commands` | list of paths | `[]` | Individual command files to copy to `~/.claude/commands/` |
+| `commandsDir` | path | `null` | Directory of markdown files to copy as commands |
+| `package` | package or null | `pkgs.claude-code` | Claude Code package to install (or null to not install) |
+| `preClean` | boolean | `false` | Clean existing files before applying configuration |
+| `memory.text` | string | `null` | Content to write to `~/.claude/CLAUDE.md` |
+| `memory.source` | path | `null` | File to copy to `~/.claude/CLAUDE.md` (takes precedence over `text`) |
+| `mcpServers` | attrset | `{}` | MCP server configurations to merge into `~/.claude.json` |
+| `user` | string | (NixOS only) | The user to install Claude Code for |
+
+
+### Configuration
 
 ```nix
 {
   imports = [
-    inputs.claude-code.homeManagerModules.default
+    inputs.claude-nix.homeManagerModules.default
+    # Or for NixOS: inputs.claude-nix.nixosModules.default
   ];
 
   programs.claude-code = {
     enable = true;
-    commands = [
-      # List of paths to command files you want to use with Claude
-      ./path/to/command1.sh
-      ./path/to/command2.md
-    ];
+    # For NixOS, specify user: user = "yourusername";
     
-    # Optional: Specify a directory containing Markdown command files to copy
-    # commandsDir = ./commands-directory;
+    # Copy individual command files
+    commands = [ ./path/to/command.md ];
     
-    # Optional: Specify a custom Claude Code package or set to null
-    # package = pkgs.claude-code;  # Default
-    # package = null;  # Don't install any package
+    # Copy all markdown files from a directory
+    commandsDir = ./command-directory;
     
-    # Optional: Clean existing files before applying configuration
-    preClean = true;
+    # Set memory content directly
+    memory.text = ''
+      # Claude Memory
+      This is information Claude will remember across sessions.
+    '';
     
-    # Optional: Configure Claude's memory file at ~/.claude/CLAUDE.md
-    memory = {
-      # Either use text to provide content directly
-      text = ''
-        # Claude Memory File
-        
-        This is information that Claude will remember across sessions.
-      '';
-      
-      # Or use source to copy from a file (takes precedence if both are specified)
-      # source = ./claude-memory.md;
-      
-      # Note: If both text and source are provided, source takes precedence
-    };
-    
-    # Optional: Configure MCP servers to be merged into ~/.claude.json
+    # Configure MCP servers (like GitHub)
     mcpServers = {
       github = {
         command = "docker";
-        args = [
-          "run"
-          "-i"
-          "--rm"
-          "-e"
-          "GITHUB_PERSONAL_ACCESS_TOKEN"
-          "ghcr.io/github/github-mcp-server"
-        ];
+        args = ["run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server"];
         env = {
           GITHUB_PERSONAL_ACCESS_TOKEN = "\${input:github_token}";
         };
@@ -87,89 +77,22 @@ Add this flake to your inputs:
 }
 ```
 
-### NixOS Usage
+## Rationale and approach
 
-```nix
-{
-  imports = [
-    inputs.claude-code.nixosModules.default
-  ];
-  
-  # This requires home-manager as a NixOS module
-  programs.claude-code = {
-    enable = true;
-    user = "yourusername"; # The user to install Claude Code for
-    commands = [
-      # List of paths to command files you want to use with Claude
-      ./path/to/command1.sh
-      ./path/to/command2.md
-    ];
-    
-    # Optional: Specify a directory containing Markdown command files to copy
-    # commandsDir = ./commands-directory;
-    
-    # Optional: Specify a custom Claude Code package or set to null
-    # package = pkgs.claude-code;  # Default
-    # package = null;  # Don't install any package
-    
-    # Optional: Clean existing files before applying configuration
-    preClean = true;
-    
-    # Optional: Configure Claude's memory file at ~/.claude/CLAUDE.md
-    memory = {
-      # Either use text to provide content directly
-      text = ''
-        # Claude Memory File
-        
-        This is information that Claude will remember across sessions.
-      '';
-      
-      # Or use source to copy from a file (takes precedence if both are specified)
-      # source = ./claude-memory.md;
-      
-      # Note: If both text and source are provided, source takes precedence
-    };
-    
-    # Optional: Configure MCP servers to be merged into ~/.claude.json
-    mcpServers = {
-      github = {
-        command = "docker";
-        args = [
-          "run"
-          "-i"
-          "--rm"
-          "-e"
-          "GITHUB_PERSONAL_ACCESS_TOKEN"
-          "ghcr.io/github/github-mcp-server"
-        ];
-        env = {
-          GITHUB_PERSONAL_ACCESS_TOKEN = "\${input:github_token}";
-        };
-      };
-    };
-  };
-}
-```
+Claude [currently has a bug where it can't read symlinked files](https://github.com/anthropics/claude-code/issues/764),
+which is why this flake uses the activation scripts to copy files into place (once the bug is resolved, the flake's API
+can remain the same but we can replace the scripts with actual nix config setup).
 
-## Notes
-
-- Claude writes history to `~/.claude.json` which can't be directly managed by Nix
-- The module ensures all command files are copied (not symlinked) as required by Claude Code
-- Command files are copied during the home-manager activation phase, after the writeBoundary
-- For the NixOS module, home-manager must be configured as a NixOS module
+Additionall, Claude writes to `~/.claude.json` so it can't be directly managed by Nix.
 
 ## Development
 
-To format the code:
-
-```
+```bash
+# Format code
 nix develop
 nixpkgs-fmt .
-```
 
-To run tests:
-
-```
+# Run tests
 nix flake check
 ```
 
