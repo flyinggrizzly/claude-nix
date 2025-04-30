@@ -1,0 +1,55 @@
+name: "CI"
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    
+    - name: Check Nix formatting
+      run: nix flake check --no-build
+      
+    - name: Run module tests
+      run: nix build .#checks.x86_64-linux.module-test -L
+      
+    - name: Run static module validations
+      run: |
+        # Check that home-manager module evaluates (without trying to convert to JSON)
+        nix eval .#homeManagerModules.default
+        
+        # Check that NixOS module evaluates (without trying to convert to JSON)
+        nix eval .#nixosModules.default
+      
+    - name: Build package
+      run: nix build
+
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    
+    - name: Check home-manager example evaluates
+      run: |
+        nix-instantiate --expr "import <nixpkgs> {}" --eval -E "
+          let 
+            pkgs = import <nixpkgs> {};
+            lib = pkgs.lib;
+            config = {};
+          in import ./example.nix { inherit config lib pkgs; }
+        "
+      
+    - name: Check NixOS example evaluates
+      run: |
+        nix-instantiate --expr "import <nixpkgs> {}" --eval -E "
+          let 
+            pkgs = import <nixpkgs> {};
+            lib = pkgs.lib;
+            config = {};
+          in import ./example-nixos.nix { inherit config lib pkgs; }
+        "

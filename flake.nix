@@ -29,9 +29,9 @@
             nixpkgs-fmt --check .
             touch $out
           '';
-          module-test = pkgs.runCommand "claude-code-module-test" { } ''
-            echo "Module test passed" > $out
-          '';
+          module-test = import ./tests/module-test.nix {
+            inherit nixpkgs self system;
+          };
         };
       }) // {
         homeManagerModules.default = import ./lib/claude-code.nix;
