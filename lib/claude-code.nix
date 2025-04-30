@@ -100,8 +100,10 @@ in {
         CLAUDE_DIR="$HOME/.claude"
         CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
 
-        # Create the directory if it doesn't exist
+        # Create the directory if it doesn't exist with proper permissions
         $DRY_RUN_CMD mkdir -p "$CLAUDE_COMMANDS_DIR"
+        # Ensure the directory is usable by forcing permissions
+        $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_COMMANDS_DIR"
 
         # Clean commands directory if preClean is enabled and we have commands or commandsDir
         ${if cfg.preClean
@@ -109,19 +111,21 @@ in {
           echo "Cleaning commands directory..."
           $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
         '' else ''
-          # preClean not enabled or no commands specified, skipping cleanup
         ''}
 
         # First, copy markdown files from commandsDir if specified
         ${if cfg.commandsDir != null then ''
-          $DRY_RUN_CMD find "${cfg.commandsDir}" -type f -name "*.md" -exec cp -f {} "$CLAUDE_COMMANDS_DIR/" \;
+          # Find all .md files and copy them using install to set permissions properly
+          for CMD_FILE in $(find "${cfg.commandsDir}" -type f -name "*.md"); do
+            DEST_FILE="$CLAUDE_COMMANDS_DIR/$(basename "$CMD_FILE")"
+            $DRY_RUN_CMD install -m 0644 "$CMD_FILE" "$DEST_FILE"
+          done
         '' else ''
           # No commandsDir specified, skipping
         ''}
 
-        # Then copy individual commands, which will overwrite any files with the same name
         ${concatMapStringsSep "\n" (commandPath: ''
-          $DRY_RUN_CMD cp -f "${commandPath}" "$CLAUDE_COMMANDS_DIR/"
+          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/$(basename "${commandPath}")"
         '') cfg.commands}
       '';
 
@@ -130,8 +134,8 @@ in {
         CLAUDE_DIR="$HOME/.claude"
         CLAUDE_MEMORY_FILE="$CLAUDE_DIR/CLAUDE.md"
 
-        # Create the directory if it doesn't exist
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
+        $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_DIR"
 
         # Clean memory file if preClean is enabled and we have memory configuration
         ${if cfg.preClean
@@ -144,13 +148,14 @@ in {
 
         # Handle memory configuration
         ${if cfg.memory.source != null then ''
-          # Copy from source file
-          $DRY_RUN_CMD cp -f "${cfg.memory.source}" "$CLAUDE_MEMORY_FILE"
+          $DRY_RUN_CMD install -m 0644 "${cfg.memory.source}" "$CLAUDE_MEMORY_FILE"
         '' else if cfg.memory.text != null then ''
-                    # Write text content to file
-                    $DRY_RUN_CMD cat > "$CLAUDE_MEMORY_FILE" << 'EOF'
+                    # Use a temporary file and install to ensure proper permissions
+                    $DRY_RUN_CMD cat > "$TMPDIR/claude_memory_temp.md" << 'EOF'
           ${cfg.memory.text}
           EOF
+                    $DRY_RUN_CMD install -m 0644 "$TMPDIR/claude_memory_temp.md" "$CLAUDE_MEMORY_FILE"
+                    $DRY_RUN_CMD rm -f "$TMPDIR/claude_memory_temp.md"
         '' else ''
           # Neither source nor text was set, do nothing
         ''}
@@ -161,8 +166,10 @@ in {
         CLAUDE_DIR="$HOME/.claude"
         CLAUDE_CONFIG_FILE="$HOME/.claude.json"
 
-        # Create directory if it doesn't exist
+        # Create directory if it doesn't exist with proper permissions
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
+        # Ensure the directory is usable by forcing permissions
+        $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_DIR"
 
         # If mcpServers configuration is not empty
         ${if cfg.mcpServers != { } then ''
@@ -184,8 +191,12 @@ in {
                     # Merge the configurations (preserving existing content and adding/updating mcpServers)
                     MERGED_CONFIG=$($DRY_RUN_CMD ${pkgs.jq}/bin/jq -s '.[0] * .[1]' <(echo "$EXISTING_CONFIG") <(echo "$NEW_MCP_CONFIG"))
 
-                    # Write the merged configuration back to ~/.claude.json
-                    $DRY_RUN_CMD echo "$MERGED_CONFIG" > "$CLAUDE_CONFIG_FILE"
+                    # Write the merged configuration to a temp file first
+                    $DRY_RUN_CMD echo "$MERGED_CONFIG" > "$TMPDIR/claude_config_temp.json"
+                    
+                    # Use install to set permissions and copy the file
+                    $DRY_RUN_CMD install -m 0644 "$TMPDIR/claude_config_temp.json" "$CLAUDE_CONFIG_FILE"
+                    $DRY_RUN_CMD rm -f "$TMPDIR/claude_config_temp.json"
         '' else ''
           # No MCP servers configured, do nothing
         ''}
