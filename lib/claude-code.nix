@@ -10,7 +10,15 @@ in {
     commands = mkOption {
       type = types.listOf types.path;
       default = [ ];
-      description = "List of file paths to be copied to ~/.claude/commands/";
+      description =
+        "List of file paths to be copied to ~/.claude/commands/. These take precedence over files from commandsDir.";
+    };
+
+    commandsDir = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description =
+        "Directory containing command files (markdown) to be copied to ~/.claude/commands/. Individual commands specified in the commands option will take precedence over files with the same name from this directory.";
     };
 
     package = mkOption {
@@ -82,6 +90,15 @@ in {
         CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
 
         $DRY_RUN_CMD mkdir -p "$CLAUDE_COMMANDS_DIR"
+
+        # First, copy markdown files from commandsDir if specified
+        ${if cfg.commandsDir != null then ''
+          $DRY_RUN_CMD find "${cfg.commandsDir}" -type f -name "*.md" -exec cp -f {} "$CLAUDE_COMMANDS_DIR/" \;
+        '' else ''
+          # No commandsDir specified, skipping
+        ''}
+
+        # Then copy individual commands, which will overwrite any files with the same name
         ${concatMapStringsSep "\n" (commandPath: ''
           $DRY_RUN_CMD cp -f "${commandPath}" "$CLAUDE_COMMANDS_DIR/"
         '') cfg.commands}

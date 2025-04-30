@@ -6,6 +6,9 @@
   programs.claude-code = {
     enable = true;
     commands = [ ./tests/test-command.md ];
+    # Optional: Specify a directory of markdown files to copy as commands
+    # commandsDir = ./commands;
+
     # Optional: Use a custom package or set to null to not install one
     # package = pkgs.claude-code;
 

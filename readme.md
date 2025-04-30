@@ -5,7 +5,7 @@ A Nix flake that provides modules for configuring Claude Code in both home-manag
 ## Features
 
 - Installs the Claude Code CLI package (optionally)
-- Copies command files to `~/.claude/commands/` directory
+- Copies command files to `~/.claude/commands/` directory individually or from a directory
 - Manages Claude memory file at `~/.claude/CLAUDE.md`
 - Configures MCP servers in `~/.claude.json` 
 - Ensures files are actual copies, not symlinks
@@ -39,6 +39,10 @@ Add this flake to your inputs:
       ./path/to/command1.sh
       ./path/to/command2.md
     ];
+    
+    # Optional: Specify a directory containing Markdown command files to copy
+    # commandsDir = ./commands-directory;
+    
     # Optional: Specify a custom Claude Code package or set to null
     # package = pkgs.claude-code;  # Default
     # package = null;  # Don't install any package
@@ -96,6 +100,10 @@ Add this flake to your inputs:
       ./path/to/command1.sh
       ./path/to/command2.md
     ];
+    
+    # Optional: Specify a directory containing Markdown command files to copy
+    # commandsDir = ./commands-directory;
+    
     # Optional: Specify a custom Claude Code package or set to null
     # package = pkgs.claude-code;  # Default
     # package = null;  # Don't install any package

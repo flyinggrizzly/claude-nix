@@ -47,7 +47,14 @@
                 type = types.listOf types.path;
                 default = [ ];
                 description =
-                  "List of file paths to be copied to ~/.claude/commands/";
+                  "List of file paths to be copied to ~/.claude/commands/. These take precedence over files from commandsDir.";
+              };
+
+              commandsDir = mkOption {
+                type = types.nullOr types.path;
+                default = null;
+                description =
+                  "Directory containing command files (markdown) to be copied to ~/.claude/commands/. Individual commands specified in the commands option will take precedence over files with the same name from this directory.";
               };
 
               user = mkOption {
@@ -123,6 +130,7 @@
                 programs.claude-code = {
                   enable = true;
                   commands = cfg.commands;
+                  commandsDir = cfg.commandsDir;
                   package = cfg.package;
                   memory = cfg.memory;
                   mcpServers = cfg.mcpServers;
