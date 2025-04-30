@@ -12,6 +12,9 @@
     # Optional: Use a custom package or set to null to not install one
     # package = pkgs.claude-code;
 
+    # Optional: Clean existing files before applying configuration
+    # preClean = true;
+
     # Optional: Configure Claude's memory file
     memory = {
       # Either use text to provide content directly

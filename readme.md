@@ -8,6 +8,7 @@ A Nix flake that provides modules for configuring Claude Code in both home-manag
 - Copies command files to `~/.claude/commands/` directory individually or from a directory
 - Manages Claude memory file at `~/.claude/CLAUDE.md`
 - Configures MCP servers in `~/.claude.json` 
+- Supports cleaning existing files before applying new configuration
 - Ensures files are actual copies, not symlinks
 - Works with both standalone home-manager and NixOS with home-manager
 
@@ -46,6 +47,9 @@ Add this flake to your inputs:
     # Optional: Specify a custom Claude Code package or set to null
     # package = pkgs.claude-code;  # Default
     # package = null;  # Don't install any package
+    
+    # Optional: Clean existing files before applying configuration
+    preClean = true;
     
     # Optional: Configure Claude's memory file at ~/.claude/CLAUDE.md
     memory = {
@@ -107,6 +111,9 @@ Add this flake to your inputs:
     # Optional: Specify a custom Claude Code package or set to null
     # package = pkgs.claude-code;  # Default
     # package = null;  # Don't install any package
+    
+    # Optional: Clean existing files before applying configuration
+    preClean = true;
     
     # Optional: Configure Claude's memory file at ~/.claude/CLAUDE.md
     memory = {

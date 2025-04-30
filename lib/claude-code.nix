@@ -58,6 +58,7 @@ in {
       description = ''
         An attrset of MCP server configurations to merge into ~/.claude.json.
         The entire attrset will be merged into the JSON file as the "mcpServers" field.
+        Supports all JSON data types including nested objects, arrays, strings, numbers, and booleans.
         Claude needs to be able to write to this file, so it is not directly managed by Nix.
       '';
       example = literalExpression ''
@@ -79,6 +80,16 @@ in {
         }
       '';
     };
+
+    preClean = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Whether to clean out existing files before applying configuration.
+        When true, the module will remove all files in ~/.claude/commands/ 
+        and delete ~/.claude/CLAUDE.md before copying/creating new files.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -89,7 +100,17 @@ in {
         CLAUDE_DIR="$HOME/.claude"
         CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
 
+        # Create the directory if it doesn't exist
         $DRY_RUN_CMD mkdir -p "$CLAUDE_COMMANDS_DIR"
+
+        # Clean commands directory if preClean is enabled and we have commands or commandsDir
+        ${if cfg.preClean
+        && (cfg.commands != [ ] || cfg.commandsDir != null) then ''
+          echo "Cleaning commands directory..."
+          $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
+        '' else ''
+          # preClean not enabled or no commands specified, skipping cleanup
+        ''}
 
         # First, copy markdown files from commandsDir if specified
         ${if cfg.commandsDir != null then ''
@@ -111,6 +132,15 @@ in {
 
         # Create the directory if it doesn't exist
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
+
+        # Clean memory file if preClean is enabled and we have memory configuration
+        ${if cfg.preClean
+        && (cfg.memory.source != null || cfg.memory.text != null) then ''
+          echo "Cleaning memory file..."
+          $DRY_RUN_CMD rm -f "$CLAUDE_MEMORY_FILE"
+        '' else ''
+          # preClean not enabled or no memory specified, skipping cleanup
+        ''}
 
         # Handle memory configuration
         ${if cfg.memory.source != null then ''
