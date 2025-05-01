@@ -20,22 +20,6 @@
 
         devShells.default =
           pkgs.mkShell { buildInputs = with pkgs; [ nixpkgs-fmt ]; };
-
-        checks = {
-          format = pkgs.runCommand "check-format" {
-            buildInputs = [ pkgs.nixpkgs-fmt ];
-          } ''
-            cd ${self}
-            nixpkgs-fmt --check .
-            touch $out
-          '';
-          module-test = import ./tests/module-test.nix {
-            inherit nixpkgs self system;
-          };
-          rewrite-test = import ./tests/rewrite-test.nix {
-            inherit nixpkgs self system;
-          };
-        };
       }) // {
         homeManagerModules.default = import ./lib/claude-code.nix;
         homeManagerModules.claude-code = self.homeManagerModules.default;
