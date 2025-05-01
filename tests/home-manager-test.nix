@@ -49,7 +49,7 @@ in
           ../tests/test-command.md
         ];
         commandsDir = ../tests;
-        preClean = true;
+        forceClean = true;
         
         memory.text = memoryText;
         

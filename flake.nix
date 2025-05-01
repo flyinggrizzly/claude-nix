@@ -35,6 +35,9 @@
           rewrite-test = import ./tests/rewrite-test.nix {
             inherit nixpkgs self system;
           };
+          backup-test = import ./tests/backup-test.nix {
+            inherit nixpkgs self system;
+          };
         };
       }) // {
         homeManagerModules.default = import ./lib/claude-code.nix;
@@ -125,11 +128,11 @@
                 '';
               };
 
-              preClean = mkOption {
+              forceClean = mkOption {
                 type = types.bool;
                 default = false;
                 description = ''
-                  Whether to clean out existing files before applying configuration.
+                  Whether to forcibly clean out existing files before applying configuration.
                   When true, the module will remove all files in ~/.claude/commands/ 
                   and delete ~/.claude/CLAUDE.md before copying/creating new files.
                 '';
@@ -147,7 +150,7 @@
                   package = cfg.package;
                   memory = cfg.memory;
                   mcpServers = cfg.mcpServers;
-                  preClean = cfg.preClean;
+                  forceClean = cfg.forceClean;
                 };
               };
             };

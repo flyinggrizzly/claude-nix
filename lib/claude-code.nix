@@ -81,13 +81,20 @@ in {
       '';
     };
 
-    preClean = mkOption {
+    forceClean = mkOption {
       type = types.bool;
       default = false;
       description = ''
-        Whether to clean out existing files before applying configuration.
+        Whether to forcibly clean out existing files before applying configuration.
         When true, the module will remove all files in ~/.claude/commands/ 
-        and delete ~/.claude/CLAUDE.md before copying/creating new files.
+        and delete ~/.claude/CLAUDE.md before copying/creating new files,
+        regardless of whether a backup extension is provided.
+        
+        If home-manager is invoked with the backup extension flag (-b) and forceClean is false,
+        existing files will be backed up with that extension instead of being overwritten.
+        For example, running `home-manager switch -b bak` will cause 
+        ~/.claude/commands/foo.md to be moved to ~/.claude/commands/foo.md.bak before
+        the new version is installed.
       '';
     };
   };
@@ -105,10 +112,17 @@ in {
         # Ensure the directory is usable by forcing permissions
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_COMMANDS_DIR"
 
-        # Clean commands directory if preClean is enabled and we have commands or commandsDir
-        ${if cfg.preClean
+        # Handle backup extension if provided through home-manager -b flag
+        if [ -n "$HOME_MANAGER_BACKUP_EXT" ]; then
+          BACKUP_EXT="$HOME_MANAGER_BACKUP_EXT"
+          echo "Using backup extension: .$BACKUP_EXT"
+        fi
+
+        # Clean commands directory if forceClean is enabled and we have commands or commandsDir
+        ${if cfg.forceClean
         && (cfg.commands != [ ] || cfg.commandsDir != null) then ''
           echo "Cleaning commands directory..."
+          # When forceClean is true, always delete the files regardless of backup extension
           $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
         '' else ''
         ''}
@@ -118,6 +132,10 @@ in {
           # Find all .md files and copy them using install to set permissions properly
           for CMD_FILE in $(find "${cfg.commandsDir}" -type f -name "*.md"); do
             DEST_FILE="$CLAUDE_COMMANDS_DIR/$(basename "$CMD_FILE")"
+            # Check if the destination file exists and backup extension is set
+            if [ -f "$DEST_FILE" ] && [ -n "$BACKUP_EXT" ]; then
+              $DRY_RUN_CMD mv "$DEST_FILE" "$DEST_FILE.$BACKUP_EXT"
+            fi
             $DRY_RUN_CMD install -m 0644 "$CMD_FILE" "$DEST_FILE"
           done
         '' else ''
@@ -129,7 +147,12 @@ in {
           parts = builtins.match "^[^-]+-(.*)$" filename;
           finalName = if parts == null then filename else builtins.elemAt parts 0;
         in ''
-          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/${finalName}"
+          DEST_FILE="$CLAUDE_COMMANDS_DIR/${finalName}"
+          # Check if the destination file exists and backup extension is set
+          if [ -f "$DEST_FILE" ] && [ -n "$BACKUP_EXT" ]; then
+            $DRY_RUN_CMD mv "$DEST_FILE" "$DEST_FILE.$BACKUP_EXT"
+          fi
+          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$DEST_FILE"
         '') cfg.commands}
       '';
 
@@ -141,19 +164,33 @@ in {
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_DIR"
 
-        # Clean memory file if preClean is enabled and we have memory configuration
-        ${if cfg.preClean
+        # Handle backup extension if provided through home-manager -b flag
+        if [ -n "$HOME_MANAGER_BACKUP_EXT" ]; then
+          BACKUP_EXT="$HOME_MANAGER_BACKUP_EXT"
+        fi
+
+        # Clean memory file if forceClean is enabled and we have memory configuration
+        ${if cfg.forceClean
         && (cfg.memory.source != null || cfg.memory.text != null) then ''
           echo "Cleaning memory file..."
+          # When forceClean is true, always delete the memory file regardless of backup extension
           $DRY_RUN_CMD rm -f "$CLAUDE_MEMORY_FILE"
         '' else ''
-          # preClean not enabled or no memory specified, skipping cleanup
+          # forceClean not enabled or no memory specified, skipping cleanup
         ''}
 
         # Handle memory configuration
         ${if cfg.memory.source != null then ''
+          # Check if the memory file exists and backup extension is set
+          if [ -f "$CLAUDE_MEMORY_FILE" ] && [ -n "$BACKUP_EXT" ]; then
+            $DRY_RUN_CMD mv "$CLAUDE_MEMORY_FILE" "$CLAUDE_MEMORY_FILE.$BACKUP_EXT"
+          fi
           $DRY_RUN_CMD install -m 0644 "${cfg.memory.source}" "$CLAUDE_MEMORY_FILE"
         '' else if cfg.memory.text != null then ''
+                    # Check if the memory file exists and backup extension is set
+                    if [ -f "$CLAUDE_MEMORY_FILE" ] && [ -n "$BACKUP_EXT" ]; then
+                      $DRY_RUN_CMD mv "$CLAUDE_MEMORY_FILE" "$CLAUDE_MEMORY_FILE.$BACKUP_EXT"
+                    fi
                     # Use a temporary file and install to ensure proper permissions
                     $DRY_RUN_CMD cat > "$TMPDIR/claude_memory_temp.md" << 'EOF'
           ${cfg.memory.text}

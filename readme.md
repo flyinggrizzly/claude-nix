@@ -4,10 +4,10 @@
 > Claude [currently has a bug where it can't read symlinked files](https://github.com/anthropics/claude-code/issues/764),
 > so this module **does not manage its files using Nix's standard add-to-store-and-symlink approach. Instead it adds
 > them to the store, and then uses an activation script to **copy** the files to the right location. The main
-> consequence of this is that if you don't set the `preClean` flag, removing e.g. a command from your config *won't
+> consequence of this is that if you don't set the `forceClean` flag, removing e.g. a command from your config *won't
 > remove it from the produced config*.
 >
-> `preClean` exists to work around this, by cleaning up all commands *before* the current ones are copied in, **but it
+> `forceClean` exists to work around this, by cleaning up all commands *before* the current ones are copied in, **but it
 > is not able to preserve any non-Nix-tracked commands**, so use it with caution, and create backups.
 
 A Nix flake that provides modules for configuring Claude Code in both home-manager and NixOS.
@@ -41,7 +41,7 @@ Add this flake to your inputs:
 | `commands` | list of paths | `[]` | Individual command files to copy to `~/.claude/commands/` |
 | `commandsDir` | path | `null` | Directory of markdown files to copy as commands |
 | `package` | package or null | `pkgs.claude-code` | Claude Code package to install (or null to not install) |
-| `preClean` | boolean | `false` | Clean existing files before applying configuration |
+| `forceClean` | boolean | `false` | Force clean existing files before applying configuration |
 | `memory.text` | string | `null` | Content to write to `~/.claude/CLAUDE.md` |
 | `memory.source` | path | `null` | File to copy to `~/.claude/CLAUDE.md` (takes precedence over `text`) |
 | `mcpServers` | attrset | `{}` | MCP server configurations to merge into `~/.claude.json` |

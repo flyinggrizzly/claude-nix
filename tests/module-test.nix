@@ -43,8 +43,8 @@ let
     fi
     
     # Verify key config options exist
-    if ! grep -q "preClean" $out/module.nix; then
-      echo "ERROR: Module doesn't contain preClean option"
+    if ! grep -q "forceClean" $out/module.nix; then
+      echo "ERROR: Module doesn't contain forceClean option"
       exit 1
     fi
     
