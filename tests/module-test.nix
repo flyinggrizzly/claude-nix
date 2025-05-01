@@ -58,9 +58,7 @@ let
     let
       testScript = ''
         import os
-        import pathlib
         import json
-        import subprocess
 
         # Helper functions for tests
         def file_exists(path):
@@ -85,6 +83,8 @@ let
       '';
     in pkgs.nixosTest {
       name = name;
+      # Skip linting to avoid unused import warnings
+      skipLint = true;
       nodes.machine = { ... }: {
         imports = [
           (if type == "nixos" then {
