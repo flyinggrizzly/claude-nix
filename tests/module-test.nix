@@ -140,9 +140,9 @@ let
 
       # Test mcpServers merges into ~/.claude.json
       machine.succeed("test -f /home/testuser/.claude.json")
-      json_content = machine.succeed("cat /home/testuser/.claude.json")
-      assert '"test"' in json_content, "~/.claude.json does not contain test server config"
-      assert '"arg1"' in json_content, "~/.claude.json does not contain expected args"
+      json_str = machine.succeed("cat /home/testuser/.claude.json")
+      assert '"test"' in json_str, "~/.claude.json does not contain test server config"
+      assert '"arg1"' in json_str, "~/.claude.json does not contain expected args"
     '';
 
     conflictingMemoryOptions = runTest "conflicting-memory-options"
