@@ -1,0 +1,1 @@
+import ./module-test.nix { type = "nixos"; }

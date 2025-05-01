@@ -14,3 +14,15 @@ jobs:
 
     - name: Check Nix formatting
       run: nix flake check --no-build
+      
+  module-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    
+    - name: Run standalone home-manager tests
+      run: nix-build tests/home-manager-standalone-test.nix -A all
+      
+    - name: Run NixOS home-manager tests
+      run: nix-build tests/nixos-home-manager-test.nix -A all
