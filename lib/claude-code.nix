@@ -89,7 +89,7 @@ in {
         When true, the module will remove all files in ~/.claude/commands/ 
         and delete ~/.claude/CLAUDE.md before copying/creating new files,
         regardless of whether a backup extension is provided.
-        
+
         If home-manager is invoked with the backup extension flag (-b) and forceClean is false,
         existing files will be backed up with that extension instead of being overwritten.
         For example, running `home-manager switch -b bak` will cause 
@@ -124,8 +124,8 @@ in {
           echo "Cleaning commands directory..."
           # When forceClean is true, always delete the files regardless of backup extension
           $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
-        '' else ''
-        ''}
+        '' else
+          ""}
 
         # First, copy markdown files from commandsDir if specified
         ${if cfg.commandsDir != null then ''
@@ -142,18 +142,20 @@ in {
           # No commandsDir specified, skipping
         ''}
 
-        ${concatMapStringsSep "\n" (commandPath: let
-          filename = builtins.baseNameOf commandPath;
-          parts = builtins.match "^[^-]+-(.*)$" filename;
-          finalName = if parts == null then filename else builtins.elemAt parts 0;
-        in ''
-          DEST_FILE="$CLAUDE_COMMANDS_DIR/${finalName}"
-          # Check if the destination file exists and backup extension is set
-          if [ -f "$DEST_FILE" ] && [ -n "$BACKUP_EXT" ]; then
-            $DRY_RUN_CMD mv "$DEST_FILE" "$DEST_FILE.$BACKUP_EXT"
-          fi
-          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$DEST_FILE"
-        '') cfg.commands}
+        ${concatMapStringsSep "\n" (commandPath:
+          let
+            filename = builtins.baseNameOf commandPath;
+            parts = builtins.match "^[^-]+-(.*)$" filename;
+            finalName =
+              if parts == null then filename else builtins.elemAt parts 0;
+          in ''
+            DEST_FILE="$CLAUDE_COMMANDS_DIR/${finalName}"
+            # Check if the destination file exists and backup extension is set
+            if [ -f "$DEST_FILE" ] && [ -n "$BACKUP_EXT" ]; then
+              $DRY_RUN_CMD mv "$DEST_FILE" "$DEST_FILE.$BACKUP_EXT"
+            fi
+            $DRY_RUN_CMD install -m 0644 "${commandPath}" "$DEST_FILE"
+          '') cfg.commands}
       '';
 
     home.activation.setupClaudeMemory =

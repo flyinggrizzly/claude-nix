@@ -29,15 +29,12 @@
             nixpkgs-fmt --check .
             touch $out
           '';
-          module-test = import ./tests/module-test.nix {
-            inherit nixpkgs self system;
-          };
-          rewrite-test = import ./tests/rewrite-test.nix {
-            inherit nixpkgs self system;
-          };
-          backup-test = import ./tests/backup-test.nix {
-            inherit nixpkgs self system;
-          };
+          module-test =
+            import ./tests/module-test.nix { inherit nixpkgs self system; };
+          rewrite-test =
+            import ./tests/rewrite-test.nix { inherit nixpkgs self system; };
+          backup-test =
+            import ./tests/backup-test.nix { inherit nixpkgs self system; };
         };
       }) // {
         homeManagerModules.default = import ./lib/claude-code.nix;
