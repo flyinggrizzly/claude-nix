@@ -115,8 +115,8 @@ in {
         && (cfg.commands != [ ] || cfg.commandsDir != null) then ''
           echo "Cleaning commands directory..."
           $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
-        '' else ''
-        ''}
+        '' else
+          ""}
 
         # First, copy markdown files from commandsDir if specified
         ${if cfg.commandsDir != null then ''
@@ -129,13 +129,15 @@ in {
           # No commandsDir specified, skipping
         ''}
 
-        ${concatMapStringsSep "\n" (commandPath: let
-          filename = builtins.baseNameOf commandPath;
-          parts = builtins.match "^[^-]+-(.*)$" filename;
-          finalName = if parts == null then filename else builtins.elemAt parts 0;
-        in ''
-          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/${finalName}"
-        '') cfg.commands}
+        ${concatMapStringsSep "\n" (commandPath:
+          let
+            filename = builtins.baseNameOf commandPath;
+            parts = builtins.match "^[^-]+-(.*)$" filename;
+            finalName =
+              if parts == null then filename else builtins.elemAt parts 0;
+          in ''
+            $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/${finalName}"
+          '') cfg.commands}
       '';
 
     home.activation.setupClaudeMemory =
