@@ -124,8 +124,12 @@ in {
           # No commandsDir specified, skipping
         ''}
 
-        ${concatMapStringsSep "\n" (commandPath: ''
-          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/$(basename "${commandPath}")"
+        ${concatMapStringsSep "\n" (commandPath: let
+          filename = builtins.baseNameOf commandPath;
+          parts = builtins.match "^[^-]+-(.*)$" filename;
+          finalName = if parts == null then filename else builtins.elemAt parts 0;
+        in ''
+          $DRY_RUN_CMD install -m 0644 "${commandPath}" "$CLAUDE_COMMANDS_DIR/${finalName}"
         '') cfg.commands}
       '';
 
