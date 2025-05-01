@@ -90,6 +90,15 @@ in {
         and delete ~/.claude/CLAUDE.md before copying/creating new files.
       '';
     };
+
+    skipBackup = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Whether to skip backing up existing files before applying configuration.
+        When true, the module will not create backup files with the specified extension.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -100,6 +109,57 @@ in {
 
     home.packages = lib.optional (cfg.package != null) cfg.package;
 
+    home.activation.backupExistingClaudeFiles = mkIf (!cfg.skipBackup)
+      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if [ -n "$HOME_MANAGER_BACKUP_EXT" ]; then
+          CLAUDE_DIR="$HOME/.claude"
+          CLAUDE_MEMORY_FILE="$CLAUDE_DIR/CLAUDE.md"
+
+          BACKUP_EXT="$HOME_MANAGER_BACKUP_EXT"
+          echo "Using backup extension: .$BACKUP_EXT"
+
+        ${if cfg.memory.source != null || cfg.memory.text != null then ''
+          if [ -f "$CLAUDE_MEMORY_FILE" ]; then
+            echo "Backing up existing memory file..."
+            $DRY_RUN_CMD mv "$CLAUDE_MEMORY_FILE" "$CLAUDE_MEMORY_FILE.$BACKUP_EXT"
+          fi
+        '' else
+          ""}
+
+        ${if cfg.commands != [ ] || cfg.commandsDir != null then ''
+           CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
+           if [ -d "$CLAUDE_COMMANDS_DIR" ]; then
+             echo "Backing up existing commands directory..."
+             $DRY_RUN_CMD mv "$CLAUDE_COMMANDS_DIR" "$CLAUDE_COMMANDS_DIR.$BACKUP_EXT"
+           fi
+          fi
+        '' else
+          ""}
+      '');
+
+    home.activation.forceCleanClaudeConfig = mkIf cfg.forceClean
+      (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        CLAUDE_DIR="$HOME/.claude"
+        CLAUDE_MEMORY_FILE="$CLAUDE_DIR/CLAUDE.md"
+        CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
+
+        ${if cfg.memory.source != null || cfg.memory.text != null then ''
+          if [ -f "$CLAUDE_MEMORY_FILE" ]; then
+            echo "Cleaning memory file..."
+            $DRY_RUN_CMD rm -f "$CLAUDE_MEMORY_FILE"
+          fi
+        '' else
+          ""}
+
+        ${if cfg.commands != [ ] || cfg.commandsDir != null then ''
+          if [ -d "$CLAUDE_COMMANDS_DIR" ]; then
+            echo "Cleaning up existing commands directory..."
+            $DRY_RUN_CMD rm -rf "$CLAUDE_COMMANDS_DIR"
+          fi
+        '' else
+          ""}
+      '');
+
     home.activation.setupClaudeCommands =
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         CLAUDE_DIR="$HOME/.claude"
@@ -109,14 +169,6 @@ in {
         $DRY_RUN_CMD mkdir -p "$CLAUDE_COMMANDS_DIR"
         # Ensure the directory is usable by forcing permissions
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_COMMANDS_DIR"
-
-        # Clean commands directory if forceClean is enabled and we have commands or commandsDir
-        ${if cfg.forceClean
-        && (cfg.commands != [ ] || cfg.commandsDir != null) then ''
-          echo "Cleaning commands directory..."
-          $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
-        '' else
-          ""}
 
         # First, copy markdown files from commandsDir if specified
         ${if cfg.commandsDir != null then ''
@@ -147,15 +199,6 @@ in {
 
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_DIR"
-
-        # Clean memory file if forceClean is enabled and we have memory configuration
-        ${if cfg.forceClean
-        && (cfg.memory.source != null || cfg.memory.text != null) then ''
-          echo "Cleaning memory file..."
-          $DRY_RUN_CMD rm -f "$CLAUDE_MEMORY_FILE"
-        '' else ''
-          # forceClean not enabled or no memory specified, skipping cleanup
-        ''}
 
         # Handle memory configuration
         ${if cfg.memory.source != null then ''

@@ -19,6 +19,7 @@ A Nix flake that provides modules for configuring Claude Code in both home-manag
 - Manage Claude memory in `~/.claude/CLAUDE.md`
 - Configure MCP servers in `~/.claude.json`
 - Support standalone home-manager and NixOS
+- Follows the `-b <backup-ext>` flag
 
 ## Quick Start
 
@@ -42,6 +43,7 @@ Add this flake to your inputs:
 | `commandsDir` | path | `null` | Directory of markdown files to copy as commands |
 | `package` | package or null | `pkgs.claude-code` | Claude Code package to install (or null to not install) |
 | `forceClean` | boolean | `false` | Clean existing files before applying configuration |
+| `skipBackup` | boolean | `false` | Skips backing up files even if the -`b <backup-ext> option is set` |
 | `memory.text` | string | `null` | Content to write to `~/.claude/CLAUDE.md` |
 | `memory.source` | path | `null` | File to copy to `~/.claude/CLAUDE.md` (takes precedence over `text`) |
 | `mcpServers` | attrset | `{}` | MCP server configurations to merge into `~/.claude.json` |
