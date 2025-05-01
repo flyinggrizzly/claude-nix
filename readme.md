@@ -1,5 +1,15 @@
 # Claude Nix
 
+>[!CAUTION]
+> Claude [currently has a bug where it can't read symlinked files](https://github.com/anthropics/claude-code/issues/764),
+> so this module **does not manage its files using Nix's standard add-to-store-and-symlink approach. Instead it adds
+> them to the store, and then uses an activation script to **copy** the files to the right location. The main
+> consequence of this is that if you don't set the `preClean` flag, removing e.g. a command from your config *won't
+> remove it from the produced config*.
+>
+> `preClean` exists to work around this, by cleaning up all commands *before* the current ones are copied in, **but it
+> is not able to preserve any non-Nix-tracked commands**, so use it with caution, and create backups.
+
 A Nix flake that provides modules for configuring Claude Code in both home-manager and NixOS.
 
 ## Features
