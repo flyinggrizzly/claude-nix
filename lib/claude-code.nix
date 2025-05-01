@@ -93,6 +93,11 @@ in {
   };
 
   config = mkIf cfg.enable {
+    assertions = [{
+      assertion = cfg.memory.source == null || cfg.memory.text == null;
+      message = "Set only one of memory.source or memory.text, not both";
+    }];
+
     home.packages = lib.optional (cfg.package != null) cfg.package;
 
     home.activation.setupClaudeCommands =
