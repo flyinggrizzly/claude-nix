@@ -10,5 +10,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/flake-checker-action@main
+    
     - name: Check Nix formatting
       run: nix flake check --no-build
+      
+    - name: Run Home Manager golden test
+      run: nix build .#checks.x86_64-linux.home-manager-test
+      
+    - name: Run Module golden test
+      run: nix build .#checks.x86_64-linux.module-test

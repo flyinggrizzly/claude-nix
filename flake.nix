@@ -12,16 +12,14 @@
 
   outputs = { self, nixpkgs, flake-utils, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        packages.default = self.packages.${system}.claude-nix;
-
-        packages.claude-nix = pkgs.callPackage ./lib/package.nix { };
-
-        devShells.default =
-          pkgs.mkShell { buildInputs = with pkgs; [ nixpkgs-fmt ]; };
-
-        checks = {
+      let 
+        pkgs = nixpkgs.legacyPackages.${system};
+        
+        # Only include tests on Linux systems
+        isLinux = system == "x86_64-linux";
+        
+        # Common checks for all systems
+        commonChecks = {
           format = pkgs.runCommand "check-format" {
             buildInputs = [ pkgs.nixpkgs-fmt ];
           } ''
@@ -30,6 +28,31 @@
             touch $out
           '';
         };
+        
+        # Linux-specific checks (only include tests on Linux systems)
+        linuxChecks = if isLinux then {
+          # Golden test for module functionality
+          module-test = pkgs.callPackage ./tests/module-test.nix {
+            claudeNix = self;
+          };
+          
+          # Golden test for home-manager integration
+          home-manager-test = pkgs.callPackage ./tests/home-manager-test.nix {
+            claudeNix = self;
+            home-manager = home-manager;
+          };
+        } else {};
+        
+      in {
+        packages.default = self.packages.${system}.claude-nix;
+
+        packages.claude-nix = pkgs.callPackage ./lib/package.nix { };
+
+        devShells.default =
+          pkgs.mkShell { buildInputs = with pkgs; [ nixpkgs-fmt ]; };
+
+        # Combine common and system-specific checks
+        checks = commonChecks // linuxChecks;
       }) // {
         homeManagerModules.default = import ./lib/claude-code.nix;
         homeManagerModules.claude-code = self.homeManagerModules.default;
