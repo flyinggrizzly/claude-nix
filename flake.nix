@@ -109,7 +109,7 @@
                 '';
               };
 
-              preClean = mkOption {
+              forceClean = mkOption {
                 type = types.bool;
                 default = false;
                 description = ''
@@ -131,7 +131,7 @@
                   package = cfg.package;
                   memory = cfg.memory;
                   mcpServers = cfg.mcpServers;
-                  preClean = cfg.preClean;
+                  forceClean = cfg.forceClean;
                 };
               };
             };

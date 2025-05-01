@@ -81,7 +81,7 @@ in {
       '';
     };
 
-    preClean = mkOption {
+    forceClean = mkOption {
       type = types.bool;
       default = false;
       description = ''
@@ -105,8 +105,8 @@ in {
         # Ensure the directory is usable by forcing permissions
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_COMMANDS_DIR"
 
-        # Clean commands directory if preClean is enabled and we have commands or commandsDir
-        ${if cfg.preClean
+        # Clean commands directory if forceClean is enabled and we have commands or commandsDir
+        ${if cfg.forceClean
         && (cfg.commands != [ ] || cfg.commandsDir != null) then ''
           echo "Cleaning commands directory..."
           $DRY_RUN_CMD rm -f "$CLAUDE_COMMANDS_DIR"/*
@@ -141,13 +141,13 @@ in {
         $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR"
         $DRY_RUN_CMD install -d -m 0755 "$CLAUDE_DIR"
 
-        # Clean memory file if preClean is enabled and we have memory configuration
-        ${if cfg.preClean
+        # Clean memory file if forceClean is enabled and we have memory configuration
+        ${if cfg.forceClean
         && (cfg.memory.source != null || cfg.memory.text != null) then ''
           echo "Cleaning memory file..."
           $DRY_RUN_CMD rm -f "$CLAUDE_MEMORY_FILE"
         '' else ''
-          # preClean not enabled or no memory specified, skipping cleanup
+          # forceClean not enabled or no memory specified, skipping cleanup
         ''}
 
         # Handle memory configuration

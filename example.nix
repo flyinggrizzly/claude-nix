@@ -13,7 +13,7 @@
     # package = pkgs.claude-code;
 
     # Optional: Clean existing files before applying configuration
-    # preClean = true;
+    # forceClean = true;
 
     # Optional: Configure Claude's memory file
     memory = {
