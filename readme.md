@@ -10,15 +10,15 @@
 > `forceClean` exists to work around this, by cleaning up all commands *before* the current ones are copied in, **but it
 > is not able to preserve any non-Nix-tracked commands**, so use it with caution, and create backups.
 
-A Nix flake that provides modules for configuring Claude Code in both home-manager and NixOS.
+A Nix flake that provides a home-manager module for configuring Claude Code.
 
 ## Features
 
 - Install the Claude Code CLI package (optional)
-- Configure command files in `~/.claude/commands/`
+- Configure command files in `~/.claude/commands/` by passing a directory and/or a list of individual files
 - Manage Claude memory in `~/.claude/CLAUDE.md`
 - Configure MCP servers in `~/.claude.json`
-- Support standalone home-manager and NixOS
+- Support for standalone home-manager
 - Follows the `-b <backup-ext>` flag
 
 ## Quick Start
@@ -31,6 +31,36 @@ Add this flake to your inputs:
     # ...
     claude-nix.url = "github:flyinggrizzly/claude-nix";
   };
+}
+```
+
+and a simple config:
+
+```nix
+{ ... }:
+{
+  config = {
+    imports = [
+      inputs.claude-nix.homeManagerModules.claude-code
+    ];
+
+    programs.claude-code = {
+      enable = true;
+      commandsDir = ./command-directory;
+      commands = [ ./path/to/extra/command.md ];
+      memory.source = ./my/claude.md;
+      mcpServers = {
+        github = {
+          command = "docker";
+          args = ["run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server"];
+          env = {
+            # Don't store this as plain text. Use like, agenix or sops-nix or sumthing
+            GITHUB_PERSONAL_ACCESS_TOKEN = "TOKEN";
+          };
+        };
+      };
+    };
+  }
 }
 ```
 
@@ -47,47 +77,7 @@ Add this flake to your inputs:
 | `memory.text` | string | `null` | Content to write to `~/.claude/CLAUDE.md` |
 | `memory.source` | path | `null` | File to copy to `~/.claude/CLAUDE.md` (takes precedence over `text`) |
 | `mcpServers` | attrset | `{}` | MCP server configurations to merge into `~/.claude.json` |
-| `user` | string | (NixOS only) | The user to install Claude Code for |
 
-
-### Configuration
-
-```nix
-{
-  imports = [
-    inputs.claude-nix.homeManagerModules.default
-    # Or for NixOS: inputs.claude-nix.nixosModules.default
-  ];
-
-  programs.claude-code = {
-    enable = true;
-    # For NixOS, specify user: user = "yourusername";
-    
-    # Copy individual command files
-    commands = [ ./path/to/command.md ];
-    
-    # Copy all markdown files from a directory
-    commandsDir = ./command-directory;
-    
-    # Set memory content directly
-    memory.text = ''
-      # Claude Memory
-      This is information Claude will remember across sessions.
-    '';
-    
-    # Configure MCP servers (like GitHub)
-    mcpServers = {
-      github = {
-        command = "docker";
-        args = ["run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN" "ghcr.io/github/github-mcp-server"];
-        env = {
-          GITHUB_PERSONAL_ACCESS_TOKEN = "\${input:github_token}";
-        };
-      };
-    };
-  };
-}
-```
 
 ## Rationale and approach
 
@@ -95,7 +85,7 @@ Claude [currently has a bug where it can't read symlinked files](https://github.
 which is why this flake uses the activation scripts to copy files into place (once the bug is resolved, the flake's API
 can remain the same but we can replace the scripts with actual nix config setup).
 
-Additionall, Claude writes to `~/.claude.json` so it can't be directly managed by Nix.
+Additionally, Claude writes to `~/.claude.json` so it can't be directly managed by Nix.
 
 ## Development
 
@@ -110,4 +100,5 @@ nix flake check
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Claude itself has
+proprietary licensing, plus nix and home-manager have their own shit. Go look it up.
