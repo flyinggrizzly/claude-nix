@@ -124,10 +124,10 @@ in
         ${
           if cfg.memory.source != null || cfg.memory.text != null then
             ''
-              if [ -f "$CLAUDE_MEMORY_FILE" ]; then
-                echo "Backing up existing memory file..."
-                $DRY_RUN_CMD mv "$CLAUDE_MEMORY_FILE" "$CLAUDE_MEMORY_FILE.$BACKUP_EXT"
-              fi
+               if [ -f "$CLAUDE_MEMORY_FILE" ]; then
+                 echo "Backing up existing memory file..."
+                 $DRY_RUN_CMD mv "$CLAUDE_MEMORY_FILE" "$CLAUDE_MEMORY_FILE.$BACKUP_EXT"
+               fi
             ''
           else
             ""
@@ -141,11 +141,11 @@ in
                  echo "Backing up existing commands directory..."
                  $DRY_RUN_CMD mv "$CLAUDE_COMMANDS_DIR" "$CLAUDE_COMMANDS_DIR.$BACKUP_EXT"
                fi
-              fi
             ''
           else
             ""
         }
+        fi
       ''
     );
 
