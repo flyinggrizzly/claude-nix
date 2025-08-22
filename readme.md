@@ -1,6 +1,9 @@
 # Claude Nix
 
 >[!CAUTION]
+> This repo is now readonly, since Home Manager has [added](http://github.com/nix-community/home-manager/pull/7685) a native [Claude Code](https://nix-community.github.io/home-manager/options.xhtml#opt-programs.claude-code.enable) configuration tool.
+
+>[!CAUTION]
 > Claude [currently has a bug where it can't read symlinked files](https://github.com/anthropics/claude-code/issues/764),
 > so this module **does not manage its files using Nix's standard add-to-store-and-symlink approach. Instead it adds
 > them to the store, and then uses an activation script to **copy** the files to the right location. The main
